@@ -1,7 +1,8 @@
 # AppCo pre-release
 
 - [Gitlab project](https://gitlab.suse.de/orchid/suse-products-recipes/suse-security)
-- [IBS project](https://build.suse.de/project/show/Devel:Jasmine:Charts) - subprojects are created, 1 per Merge Request
+- [IBS build](https://build.suse.de/project/show/Devel:Jasmine:Charts) - subprojects are created, 1 per Merge Request
+- [IBS Registry](https://registry.suse.de/cgi-bin/cooverview?srch_term=project%3D%5EDevel%3AJasmine%3A.*MR)
 
 ## Versioning (-alpha,-rc)
 We are using an alpha version to build the containers.
@@ -14,12 +15,8 @@ When there is a new version we:
  - naming always follow the same convention. To avoid collisions, we add the MR id in the paths, in principle, that's the only parameter
  - we build and push the containers in the same way
 
-## Steps:
+## Steps
 
-### Parameters:
-- version: 0.8.0
-- helm chart: mr-25
-- containers: mr-33
 
 ### Create cluster with access to registry.suse.de (IBS)
 
@@ -27,36 +24,61 @@ When there is a new version we:
 - with `insecure_skip_verify: true` or SUSE ca
 
 
-### Prepare namespace with pull secret
+### Without MR (main)
+
+Installation from GitLab can be done also without MR.
+This should be equivalent to latest released version in AppCo.
+
 ```bash
-# Generate auth token https://apps.rancher.io/settings/access-tokens
-set -x APPCO_ID <ID>
-set -x APPCO_PW <PW>
-kubectl create namespace kubewarden
-kubectl create secret docker-registry application-collection -n kubewarden \
-  --docker-server=dp.apps.rancher.io --docker-username=$APPCO_ID --docker-password=$APPCO_PW
+mr_chart=oci://registry.suse.de/devel/jasmine/charts/charts/suse-security-admission-controller
+mr_reg=registry.suse.de/devel/jasmine/containers
 ```
 
-### Install
+### With MR (release)
 
+Each release is based on GitLab MR. There are 2 repositories: charts & images. We need to find MR numbers to get correct artifact url.
 You can set parameters from MRs manually. This example attempts to parse them from open MRs.
-<!-- ver=1.0.0-3.1 -->
-<!-- # tag=1.37.0 # 1.37.0-1.3 # 1? 1.37.0? -->
+
 ```bash
 # Product name from MR
 title='SUSE Security Admission Controller'
 
-# Build oci url from chart MR id (30)
+# Build oci url from chart MR id
+# oci://registry.suse.de/devel/jasmine/charts/suse-security/mr-27/charts/suse-security-admission-controller
 mrc=$(glab mr list -R https://gitlab.suse.de/orchid/suse-products-recipes/suse-security/charts --search "$title" -F json --jq '.[0].iid')
 mr_chart=oci://registry.suse.de/devel/jasmine/charts/suse-security/mr-$mrc/charts/suse-security-admission-controller
 
-# Build registry url from image MR id (38)
+# Build registry url from image MR id
+# registry.suse.de/devel/jasmine/containers/suse-security/mr-31
 mri=$(glab mr list -R https://gitlab.suse.de/orchid/suse-products-recipes/suse-security/rpms-containers --search "$title" -F json --jq '.[0].iid')
 mr_reg=registry.suse.de/devel/jasmine/containers/suse-security/mr-$mri
 
 # Get product version (1.37.0)
 mr_tag=$(glab mr list -R https://gitlab.suse.de/orchid/suse-products-recipes/suse-security/charts --search "$title" -F json --jq '.[0].title' | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
+
+echo Chart: $mr_chart
+echo Reg: $mr_reg
+echo Tag: $mr_tag
 ```
+
+### Prepare secrets
+```bash
+# Generate auth token https://apps.rancher.io/settings/access-tokens
+set -x APPCO_ID <ID>
+set -x APPCO_PW <PW>
+
+# basicAuthSecret
+# GitLab does not require auth
+
+# imagePullSecret
+# GitLab does not require this. It is used for extra images that are not part of MR
+kubectl create namespace kubewarden
+kubectl create secret docker-registry application-collection -n kubewarden \
+  --docker-server=dp.apps.rancher.io --docker-username=$APPCO_ID --docker-password=$APPCO_PW
+```
+
+
+### Install from GitLab
 
 ```bash
 # Login required for released versions
