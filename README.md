@@ -10,3 +10,19 @@
 | QASE         |                                                                                          | [kubewarden](https://app.qase.io/project/KUBEWARDEN)                                  |                                                                                                       | [SUSE Security](https://app.qase.io/project/SS)                           |                                                                                                            | [SUSE Security](https://app.qase.io/project/SS)                       |
 |              |                                                                                          |                                                                                       |                                                                                                       |                                                                           |                                                                                                            |                                                                       |
 | QA contact   | [Martin](https://github.com/kravciak) & [Julien](https://github.com/juadk)               |                                                                                       | [William](https://github.com/williamshen9999)                                                         | [Leo](https://github.com/leotseng-suse)                                   | [Venkatesh](https://github.com/venkateshjayagopal)                                                         |                                                                       |
+
+## Release testing workflow
+
+- Tag 0.13.0-alpha1
+  - DEV provides information about new features added in alpha1 (list, blogpost, docs, ..)
+  - QA will test it, creates issues for bugs, no approval is required
+  - The purpose is to find issues early in release cycle
+
+- Iterate alpha/beta/.. tags until final RC
+
+- Tag 0.13.0-rcX
+  - QA gives estimation on how long it will take to test
+  - QA does final checks for the release and gives approval (or release blockers)
+
+- Release 0.13.0 (same as 0.13.0-rcX)
+  - DEV releases after QA approval of final RC
